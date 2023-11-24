@@ -5,7 +5,7 @@ const path = require('path');
 
 // Storage configuration for multer
 const storage = multer.diskStorage({
-    destination: './CB-Frontend/public/assets/images/blog',
+    destination: 'https://codebeans.net/assets/images/blog',
     filename: (req, file, callback) => {
         const ext = path.extname(file.originalname);
         const fileName = Date.now() + ext;
@@ -198,8 +198,7 @@ const GetAllBlog = asyncHandler(async (req, res) => {
         const totalPages = Math.ceil(totalBlogCount / perPage);
         // Set a custom header "X-Total-Pages" to transmit the total number of pages
         res.setHeader("X-Total-Pages", totalPages);
-        console.log(totalPages,"Hello to all Page")
-
+        console.log(totalPages);
         const allBlog = await Blog.find()
             .sort('s_no')
             .skip(skip)
