@@ -13,6 +13,7 @@ const Head_bodyscript = require("./routes/head_bodyRoute");
 const Testimonial = require("./routes/testimonialRoute");
 const Websitelogo = require("./routes/websitelogoRoute");
 const Header = require("./routes/headerRoute");
+const Newslettersub = require("./routes/newsletterRoute");
 const Footerlist = require("./routes/footerRoute");
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
@@ -42,6 +43,7 @@ app.use("/hiring", Hireing);
 app.use("/service", Service);
 app.use("/testimonial", Testimonial);
 app.use("/gallery", Gallery);
+app.use("/newsletters", Newslettersub);
 app.use("/faq", FaQ);
 app.use("/footerlist", Footerlist);
 
