@@ -14,6 +14,7 @@ const Testimonial = require("./routes/testimonialRoute");
 const Websitelogo = require("./routes/websitelogoRoute");
 const Header = require("./routes/headerRoute");
 const Newslettersub = require("./routes/newsletterRoute");
+const ContactUs = require("./routes/contactRoute");
 const Footerlist = require("./routes/footerRoute");
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
@@ -44,6 +45,7 @@ app.use("/service", Service);
 app.use("/testimonial", Testimonial);
 app.use("/gallery", Gallery);
 app.use("/newsletters", Newslettersub);
+app.use("/contactus", ContactUs);
 app.use("/faq", FaQ);
 app.use("/footerlist", Footerlist);
 
