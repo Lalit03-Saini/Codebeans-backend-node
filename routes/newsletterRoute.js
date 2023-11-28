@@ -6,6 +6,6 @@ const { createnewsub, Updatenewslettersub, Deletenewslettersub, getallsub } = re
 router.post("/", createnewsub);
 router.put("/:id", Updatenewslettersub);
 router.delete("/:id", Deletenewslettersub);
-router.getallsub("/all", getallsub);
+router.get("/all", getallsub);
 
 module.exports = router;
