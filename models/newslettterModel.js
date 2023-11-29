@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 
 const newsletterSchema = new mongoose.Schema(
     {
-        email: {
+        subemail: {
             type: String,
             required: true,
             unique: true, // Ensures uniqueness of the email field
