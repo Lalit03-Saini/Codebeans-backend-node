@@ -5,7 +5,9 @@ const asyncHandler = require("express-async-handler");
 const createnewsub = asyncHandler(async (req, res) => {
     try {
         const NewSub = await Newslettersub.create(req.body);
-        res.status(201).json(NewSub);
+        res.status(201).json({
+            message: 'Thank you for subscribing to our newsletter!'
+        });
     } catch (error) {
         res.status(500).json({ error: `An error occurred: ${error.message}` });
     }
