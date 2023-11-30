@@ -8,6 +8,7 @@ const createnewsub = asyncHandler(async (req, res) => {
         res.status(201).json({
             message: 'Thank you for subscribing to our newsletter!'
         });
+        console.log(NewSub)
     } catch (error) {
         console.error('Error creating user:', error);
 
