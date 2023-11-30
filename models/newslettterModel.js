@@ -7,13 +7,13 @@ const newsletterSchema = new mongoose.Schema(
             required: true,
             unique: true, // Ensures uniqueness of the email field
             lowercase: true, // Stores email addresses in lowercase
-            match: [/\S+@\S+\.\S+/, 'Invalid email format'], // Regex match for email format
-            validate: {
-                validator: function (v) {
-                    return /\S+@\S+\.\S+/.test(v); // Custom validator for email format
-                },
-                message: 'Invalid email format',
-            },
+            // match: [/\S+@\S+\.\S+/, 'Invalid email format'], // Regex match for email format
+            // validate: {
+            //     validator: function (v) {
+            //         return /\S+@\S+\.\S+/.test(v); // Custom validator for email format
+            //     },
+            //     message: 'Invalid email format',
+            // },
         },
     },
     { timestamps: true }
