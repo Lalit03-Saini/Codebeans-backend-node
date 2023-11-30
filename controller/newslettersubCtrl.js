@@ -31,7 +31,9 @@ const Deletenewslettersub = asyncHandler(async (req, res) => {
     const { id } = req.params;
     try {
         const deletenewsletterSub = await Newslettersub.findByIdAndDelete(id);
-        res.status(204).send();
+        res.status(204).json({
+            message: "Your NewsLetter Subscribe User is Deleted Successfully"
+        });
     } catch (error) {
         res.status(500).json({ error: `An error occurred: ${error.message}` });
     }
