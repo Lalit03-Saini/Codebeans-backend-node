@@ -5,7 +5,7 @@ const path = require('path');
 
 // Storage configuration for multer
 const storage = multer.diskStorage({
-    destination: 'https://codebeans.net/assets/images/blog',
+    destination: './CB-Frontend/public/assets/images/blog',
     filename: (req, file, callback) => {
         const ext = path.extname(file.originalname);
         const fileName = Date.now() + ext;

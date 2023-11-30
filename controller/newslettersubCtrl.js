@@ -8,14 +8,10 @@ const createnewsub = asyncHandler(async (req, res) => {
             message: 'Thank you for subscribing to our newsletter!'
         });
     } catch (error) {
-        // Check for duplicate key error and handle it explicitly
-        if (error.code === 11000) {
-            res.status(400).json({ error: 'Email address is already subscribed.' });
-        } else {
-            res.status(500).json({ error: `An error occurred: ${error.message}` });
-        }
+        res.status(500).json({ error: `An error occurred: ${error.message}` });
     }
 });
+
 
 const Updatenewslettersub = asyncHandler(async (req, res) => {
     const { id } = req.params;
