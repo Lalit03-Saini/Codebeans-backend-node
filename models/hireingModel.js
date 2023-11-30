@@ -26,6 +26,10 @@ const hiringSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
+        workingplace: {
+            type: String,
+            required: true,
+        }
 
     },
     { timestamps: true }
