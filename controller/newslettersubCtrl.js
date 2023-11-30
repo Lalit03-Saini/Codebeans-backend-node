@@ -29,7 +29,9 @@ const deleteNewsletterSub = asyncHandler(async (req, res) => {
     const { id } = req.params;
     try {
         await Newslettersub.findByIdAndDelete(id);
-        res.status(204).json();
+        res.status(204).json({
+            message: "Your Newsletter Subscribe deleted succesfully"
+        });
     } catch (error) {
         res.status(500).json({ error: `An error occurred: ${error.message}` });
     }
@@ -37,8 +39,8 @@ const deleteNewsletterSub = asyncHandler(async (req, res) => {
 
 const getAllSub = asyncHandler(async (req, res) => {
     try {
-        const getAllSub = await Newslettersub.find();
-        res.status(200).json(getAllSub);
+        const getallSub = await Newslettersub.find();
+        res.status(200).json(getallSub);
     } catch (error) {
         res.status(500).json({ error: `An error occurred: ${error.message}` });
     }

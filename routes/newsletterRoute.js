@@ -1,11 +1,11 @@
 const express = require("express");
 const router = express.Router();
 
-const { createnewsub, Updatenewslettersub, Deletenewslettersub, getallsub } = require("../controller/newslettersubCtrl");
+const { createNewSub, updateNewsletterSub, deleteNewsletterSub, getAllSub } = require("../controller/newslettersubCtrl");
 
-router.post("/", createnewsub);
-router.put("/:id", Updatenewslettersub);
-router.delete("/:id", Deletenewslettersub);
-router.get("/all", getallsub);
+router.post("/", createNewSub);
+router.put("/:id", updateNewsletterSub);
+router.delete("/:id", deleteNewsletterSub);
+router.get("/all", getAllSub);
 
 module.exports = router;
