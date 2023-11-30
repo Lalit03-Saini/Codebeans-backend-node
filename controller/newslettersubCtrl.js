@@ -9,7 +9,8 @@ const createnewsub = asyncHandler(async (req, res) => {
             message: 'Thank you for subscribing to our newsletter!'
         });
     } catch (error) {
-        res.status(500).json({ error: `An error occurred: ${error.message}` });
+        res.status(500).json({ message: "An error occurred while processing your request. Please try again later." });
+        console.log(error);
     }
 });
 
