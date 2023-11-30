@@ -9,8 +9,8 @@ const CreatenewUser = asyncHandler(async (req, res) => {
             message: 'Thank you for contacting us. We will get back to you soon!'
         });
     } catch (error) {
+        console.error('Error creating user:', error);
         res.status(500).json({ message: "An error occurred while processing your request. Please try again later." });
-        console.log(error);
     }
 });
 
