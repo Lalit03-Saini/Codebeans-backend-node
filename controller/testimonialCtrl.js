@@ -5,7 +5,7 @@ const asyncHandler = require("express-async-handler");
 const createTestimonial = asyncHandler(async (req, res) => {
     try {
         const newTestimonial = await Testimonial.create(req.body);
-        res.status(201).json({ message: 'Testimonial created successfully', newTestimonial });
+        res.status(201).json({ message: 'Testimonial created successfully' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: `An error occurred: ${error.message}` });
