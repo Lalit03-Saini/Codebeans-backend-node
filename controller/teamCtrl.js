@@ -1,119 +1,100 @@
 const Team = require('../models/teamModel');
-const multer = require('multer');
 const asyncHandler = require('express-async-handler');
-const path = require('path');
+const cloudinary = require('../utils/cloudinary');
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-    destination: './CB-Frontend/public/assets/images/team',
-    filename: (req, file, callback) => {
-        const ext = path.extname(file.originalname);
-        const fileName = Date.now() + ext;
-        callback(null, fileName);
-    },
-});
-
-const upload = multer({
-    storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit (adjust as needed)
-}).single('image'); // Use 'image' as the field name for file upload
-
-// Create a new team member with a banner image
 const createTeamMember = asyncHandler(async (req, res) => {
     try {
-        // Handle file upload
-        upload(req, res, async function (err) {
-            if (err) {
-                return res.status(400).json({ error: 'Please select an image file or select less then 5MB.' });
-            }
-
-            if (!req.body.title || !req.body.linkedin_id || !req.body.position) {
-                return res.status(400).json({ error: 'Please provide all required fields.' });
-            }
-            const newTeamMember = new Team({
-                s_no: req.body.s_no,
-                title: req.body.title,
-                linkedin_id: req.body.linkedin_id,
-                position: req.body.position,
-                order: req.body.order,
-                banner_image: req.file.filename, // Store only the image link
-            });
-
-            // Save the team member to the database
-            await newTeamMember.save();
-
-            res.status(201).json({ message: 'Team member created successfully' });
+        const result = await cloudinary.uploader.upload(req.file.path, {
+            folder: 'Team_member',
         });
+
+        const newTeamMember = new Team({
+            s_no: req.body.s_no,
+            title: req.body.title,
+            linkedin_id: req.body.linkedin_id,
+            position: req.body.position,
+            order: req.body.order,
+            banner_image: result.secure_url,
+            cloudinaryPublicId: result.public_id,
+        });
+
+        await newTeamMember.save();
+        res.status(201).json({ message: 'Team member created successfully' });
+
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: `An error occurred: ${error.message}` });
+        console.error('Error creating team member:', error);
+        res.status(500).json({ message: 'Internal server error', error: error.message });
     }
 });
 
 // Update a team member by ID
 const updateTeamMember = asyncHandler(async (req, res) => {
-    const id = req.params.id;
-
     try {
-        // Find the team member by ID
-        const teamMember = await Team.findById(id);
+        const teamMemberId = req.params.id;
 
-        if (!teamMember) {
-            return res.status(404).json({ message: 'Team member not found.' });
+        // Check if a file is uploaded
+        let imageUrl = null;
+        let cloudinaryPublicId = null;
+
+        if (req.file) {
+            // Upload image to Cloudinary in the "Team" folder
+            const result = await cloudinary.uploader.upload(req.file.path, {
+                folder: 'Team',
+            });
+            imageUrl = result.secure_url;
+            cloudinaryPublicId = result.public_id;
         }
 
-        // Handle file upload if a new image is provided
-        upload(req, res, async function (err) {
-            if (err) {
-                return res.status(400).json({ error: 'Please select an image file or select less than 5MB.' });
-            }
-            // Update the team member's details
-            if (req.body.s_no) {
-                teamMember.s_no = req.body.s_no;
-            }
-            if (req.body.title) {
-                teamMember.title = req.body.title;
-            };
-            if (req.body.linkedin_id) {
-                teamMember.linkedin_id = req.body.linkedin_id;
-            }
-            if (req.body.position) {
-                teamMember.position = req.body.position;
-            }
-            if (req.body.order) {
-                teamMember.order = req.body.order;
-            }
-            if (req.file) {
-                // If a new image is uploaded, update the partner_image property
-                teamMember.banner_image = req.file.filename;
-            }
+        // Find the team member by ID
+        const teamMember = await Team.findById(teamMemberId);
 
+        if (!teamMember) {
+            return res.status(404).json({ message: 'Team member not found' });
+        }
 
-            // Save the updated team member
-            await teamMember.save();
+        // Update team member fields
+        teamMember.s_no = req.body.s_no || teamMember.s_no;
+        teamMember.title = req.body.title || teamMember.title;
+        teamMember.linkedin_id = req.body.linkedin_id || teamMember.linkedin_id;
+        teamMember.position = req.body.position || teamMember.position;
+        teamMember.order = req.body.order || teamMember.order;
+        teamMember.imageUrl = imageUrl || teamMember.imageUrl;
+        teamMember.cloudinaryPublicId = cloudinaryPublicId || teamMember.cloudinaryPublicId;
 
-            res.json({ message: 'Team member updated successfully.' });
-        });
+        // Save the updated team member
+        await teamMember.save();
+
+        res.json({ message: 'Team member updated successfully' });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: `Internal server error: ${error.message}` });
+        console.error('Error updating team member:', error);
+        res.status(500).json({ message: 'Internal server error', error: error.message });
     }
 });
 
 // Delete a team member by ID
 const deleteTeamMember = asyncHandler(async (req, res) => {
-    const id = req.params.id;
     try {
-        const deletedTeamMember = await Team.findByIdAndDelete(id);
+        const teamMemberId = req.params.id;
 
-        if (!deletedTeamMember) {
-            return res.status(404).json({ message: 'Team member not found.' });
+        // Find the team member by ID
+        const teamMember = await Team.findById(teamMemberId);
+
+        if (!teamMember) {
+            return res.status(404).json({ message: 'Team member not found' });
         }
 
-        res.json({ message: 'Team member deleted successfully.' });
+        // Delete the image from Cloudinary
+        if (teamMember.cloudinaryPublicId) {
+            await cloudinary.uploader.destroy(teamMember.cloudinaryPublicId);
+        }
+
+        // Remove the team member from the database
+        await teamMember.remove();
+
+        res.json({ message: 'Team member deleted successfully' });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: `Internal server error: ${error.message}` });
+        console.error('Error deleting team member:', error);
+        res.status(500).json({ message: 'Internal server error', error: error.message });
     }
 });
 

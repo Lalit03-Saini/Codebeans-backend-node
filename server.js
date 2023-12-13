@@ -50,7 +50,7 @@ app.use("/faq", FaQ);
 app.use("/footerlist", Footerlist);
 
 app.get("/", (req, res) => {
-    res.send(`<h1>Wellcome to World...</h1>`)
+    res.send(`<h1>Hello,Wellcomeback Boss!</h1>`)
 })
 app.use(notFound);
 app.use(errorHandler);
