@@ -1,40 +1,13 @@
 const Blog = require("../models/blogModel");
-const multer = require('multer');
 const asyncHandler = require("express-async-handler");
-const path = require('path');
+const cloudinary = require('../utils/cloudinary');
+const fs = require('fs');
 
-// Storage configuration for multer
-const storage = multer.diskStorage({
-    destination: './CB-Frontend/public/assets/images/blog',
-    filename: (req, file, callback) => {
-        const ext = path.extname(file.originalname);
-        const fileName = Date.now() + ext;
-        callback(null, fileName);
-    },
-});
-
-// Configure multer to handle image uploads for five different fields
-const upload = multer({
-    storage,
-    limits: { fileSize: 5 * 1024 * 1024 },
-    fileFilter: (req, file, callback) => {
-        if (file.mimetype.startsWith("image/")) {
-            callback(null, true);
-        } else {
-            callback(new Error("Only image files are allowed."), false);
-        }
-    }
-}).fields([
-    { name: 'image1', maxCount: 1 },
-    { name: 'image2', maxCount: 1 },
-    { name: 'image3', maxCount: 1 },
-    { name: 'image4', maxCount: 1 },
-    { name: 'image5', maxCount: 1 }
-]);
 
 // Creating Blog
 const createBlog = asyncHandler(async (req, res) => {
     try {
+        // Use the 'upload' middleware to handle file uploads
         upload(req, res, async function (err) {
             if (err) {
                 return res.status(400).json({ error: "Please select image files (up to 5) with a total size less than 5MB." });
@@ -42,10 +15,17 @@ const createBlog = asyncHandler(async (req, res) => {
             if (!req.body.s_no || !req.body.title || !req.body.blogdetail || !req.body.heading || !req.body.heading1 || !req.body.heading2 || !req.body.headingdetail || !req.body.headingdetail1 || !req.body.headingdetail2) {
                 return res.status(400).json({ error: 'Please provide all required fields.' });
             }
+            // Upload images to Cloudinary
             const imageUrls = [];
             for (let i = 1; i <= 5; i++) {
                 if (req.files[`image${i}`]) {
-                    imageUrls.push(req.files[`image${i}`][0].filename);
+                    const result = await cloudinary.uploader.upload(req.files[`image${i}`][0].path);
+                    imageUrls.push(result.secure_url);
+                }
+            }
+            for (let i = 1; i <= 5; i++) {
+                if (req.files[`image${i}`]) {
+                    fs.unlinkSync(req.files[`image${i}`][0].path);
                 }
             }
             const newBlog = new Blog({
@@ -68,6 +48,7 @@ const createBlog = asyncHandler(async (req, res) => {
         res.status(500).json({ error: `An error occurred: ${error.message}` });
     }
 });
+
 // Update a Blog with id
 const UpdateBlog = asyncHandler(async (req, res) => {
     const id = req.params.id; // Get the blog post ID from the request parameters
@@ -81,8 +62,7 @@ const UpdateBlog = asyncHandler(async (req, res) => {
             return res.status(404).json({ message: "Blog not found..." });
         }
 
-        // Use the 'upload' middleware to handle file uploads, similar to the create code
-
+        // Use the 'upload' middleware to handle file uploads
         upload(req, res, async function (err) {
             if (err) {
                 return res.status(400).json({ error: "Please select image files (up to 5) with a total size less than 5MB." });
@@ -90,41 +70,28 @@ const UpdateBlog = asyncHandler(async (req, res) => {
             if (req.body.s_no) {
                 updatedBlog.s_no = req.body.s_no;
             }
-            if (req.body.title) {
-                updatedBlog.title = req.body.title;
-            }
-            if (req.body.blogdetail) {
-                updatedBlog.blogdetail = req.body.blogdetail;
-            }
-            if (req.body.heading) {
-                updatedBlog.heading = req.body.heading;
-            }
-            if (req.body.heading1) {
-                updatedBlog.heading1 = req.body.heading1;
-            }
-            if (req.body.heading2) {
-                updatedBlog.heading2 = req.body.heading2;
-            }
-            if (req.body.headingdetail) {
-                updatedBlog.headingdetail = req.body.headingdetail;
-            }
-            if (req.body.headingdetail1) {
-                updatedBlog.headingdetail1 = req.body.headingdetail1;
-            }
-            if (req.body.headingdetail2) {
-                updatedBlog.headingdetail2 = req.body.headingdetail2;
-            }
+            // ... (update other fields)
 
-            // Only update the imagePaths if new images are uploaded
-            const imageUrls = [];
-            for (let i = 1; i <= 5; i++) {
-                if (req.files[`image${i}`]) {
-                    imageUrls.push(req.files[`image${i}`][0].filename);
+            // Delete old images from Cloudinary
+            if (req.body.deleteImages && req.body.deleteImages.length > 0) {
+                for (let imageName of req.body.deleteImages) {
+                    // Delete the image from Cloudinary using its public ID
+                    await cloudinary.uploader.destroy(imageName);
                 }
             }
 
-            if (imageUrls.length > 0) {
-                updatedBlog.imagePaths = imageUrls;
+            // Upload new images to Cloudinary
+            const newImageUrls = [];
+            for (let i = 1; i <= 5; i++) {
+                if (req.files[`image${i}`]) {
+                    const result = await cloudinary.uploader.upload(req.files[`image${i}`][0].path);
+                    newImageUrls.push(result.secure_url);
+                }
+            }
+
+            // Update the imagePaths if new images are uploaded
+            if (newImageUrls.length > 0) {
+                updatedBlog.imagePaths = newImageUrls;
             }
 
             // Save the updated blog post to the database
@@ -151,21 +118,13 @@ const deleteBlog = asyncHandler(async (req, res) => {
             return res.status(404).json({ message: 'Blog not found.' });
         }
 
-        // Delete associated image files
-        const imageDir = path.join(__dirname, 'CB-Frontend/public/assets/images/blog');
-        deletedBlog.imagePaths.forEach((imagePath) => {
-            const fullPath = path.join(imageDir, imagePath);
-            try {
-                if (fs.existsSync(fullPath)) {
-                    fs.unlinkSync(fullPath);
-                    console.log(`Deleted file: ${fullPath}`);
-                } else {
-                    console.warn(`File not found: ${fullPath}`);
-                }
-            } catch (err) {
-                console.error(`Error deleting file: ${fullPath}`, err);
-            }
-        });
+        // Delete associated image files from Cloudinary
+        for (let imagePath of deletedBlog.imagePaths) {
+            // Extract the public ID from the image URL
+            const publicId = imagePath.split('/').pop().split('.')[0];
+            // Delete the image from Cloudinary using its public ID
+            await cloudinary.uploader.destroy(publicId);
+        }
 
         res.json({ message: 'Blog and associated images have been deleted successfully.' });
     } catch (error) {

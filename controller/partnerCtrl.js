@@ -1,46 +1,27 @@
 const Partner = require("../models/partnerModel");
-const multer = require('multer');
 const asyncHandler = require("express-async-handler");
-const path = require("path");
-
-const storage = multer.diskStorage({
-    destination: './CB-Frontend/public/assets/images/partner',
-    filename: (req, file, callback) => {
-        const ext = path.extname(file.originalname);
-        const fileName = Date.now() + ext;
-        callback(null, fileName);
-    },
-});
-
-const upload = multer({
-    storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit (adjust as needed)
-}).single('image'); // Use 'image' as the field name for file upload
-// Create a new partner with a banner image
+const cloudinary = require('../utils/cloudinary');
+const fs = require('fs');
 
 //---------Createing a new Partner-------------//
 const createPartner = asyncHandler(async (req, res) => {
     try {
         // Handle file upload
-        upload(req, res, async function (err) {
-            if (err) {
-                return res.status(400).json({ error: 'Please select an image file or select less then 5MB.' });
-            }
-
-            if (!req.body.link || !req.body.s_no) {
-                return res.status(400).json({ error: 'Please provide all required fields.' });
-            }
-            const newPartner = new Partner({
-                s_no: req.body.s_no,
-                link: req.body.link,
-                partner_image: req.file.filename, // Store only the image link
-            });
-
-            // Save the team member to the database
-            await newPartner.save();
-
-            res.status(201).json({ message: 'Team member created successfully' });
+        const result = await cloudinary.uploader.upload(req.file.path, {
+            folder: 'Partner_images',
         });
+        fs.unlinkSync(req.file.path);
+
+        const newPartner = new Partner({
+            s_no: req.body.s_no,
+            link: req.body.link,
+            partner_image: result.secure_url,
+            cloudinaryPublicId: result.public_id,
+        });
+
+        // Save the team member to the database
+        await newPartner.save();
+        res.status(201).json({ message: 'Team member created successfully' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: `An error occurred: ${error.message}` });
@@ -48,31 +29,35 @@ const createPartner = asyncHandler(async (req, res) => {
 });
 
 const updatePartner = asyncHandler(async (req, res) => {
-    const id = req.params.id;
-
     try {
-        const partner = await Partner.findById(id);
+        const id = req.params.id;
 
-        if (!partner) {
-            return res.status(404).json({ message: "Partner not found" });
+        // Check if a file is uploaded
+        let imageUrl = null;
+        let cloudinaryPublicId = null;
+
+        if (req.file) {
+            const result = await cloudinary.uploader.upload
+                (req.file.path, {
+                    folder: 'Partner_images',
+                });
+            imageUrl = result.secure_url;
+            cloudinaryPublicId = result.public_id;
         }
 
+        const partner = await Partner.findById(id);
         // Handle file upload if a new image is provided
+        if (!partner) {
+            return res.status(404).json({ message: 'Partner not found' });
+        }
         upload(req, res, async function (err) {
             if (err) {
                 return res.status(400).json({ error: 'Please select an image file or select less than 5MB.' });
             }
-            if (req.body.s_no) {
-                partner.s_no = req.body.s_no;
-            }
-            if (req.body.link) {
-                partner.link = req.body.link;
-            }
-
-            if (req.file) {
-                // If a new image is uploaded, update the partner_image property
-                partner.partner_image = req.file.filename;
-            }
+            partner.s_no = req.body.s_no || partner.s_no;
+            partner.link = req.body.link || partner.link;
+            partner.imageUrl = imageUrl || partner.imageUrl;
+            partner.cloudinaryPublicId = cloudinaryPublicId || partner.cloudinaryPublicId;
 
             // Save the updated Partner's details
             await partner.save();
@@ -87,12 +72,19 @@ const updatePartner = asyncHandler(async (req, res) => {
 
 //---------Delete a Partner with id-------------//
 const deletePartner = asyncHandler(async (req, res) => {
-    const id = req.params.id;
     try {
-        const deletedPartner = await Partner.findByIdAndDelete(id);
+        const id = req.params.id;
+        const deletedPartner = await Partner.findById(id);
         if (!deletedPartner) {
             return res.status(404).json({ error: 'Partner not found' });
         }
+
+        // Delete the image from Cloudinary
+        if (deletedPartner.cloudinaryPublicId) {
+            await cloudinary.uploader.destroy(teamMember.cloudinaryPublicId);
+        }
+
+        await deletedPartner.remove();
         res.json({ message: 'Partner deleted successfully' });
     } catch (error) {
         console.error(error);

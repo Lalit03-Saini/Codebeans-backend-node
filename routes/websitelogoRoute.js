@@ -1,9 +1,12 @@
-const { createLogo, updatewebsitelogo, getwebsiteLogo } = require("../controller/websitelogCtrl");
+const { createLogo, updateWebsiteLogo, getWebsiteLogo } = require("../controller/websitelogCtrl");
+
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/' });
 const express = require("express");
 const router = express.Router();
 
-router.post("/", createLogo);
-router.put("/:id", updatewebsitelogo);
-router.get("/all", getwebsiteLogo);
+router.post("/", upload.single('image'), createLogo);
+router.put("/:id", upload.single('image'), updateWebsiteLogo);
+router.get("/all", getWebsiteLogo);
 
 module.exports = router;

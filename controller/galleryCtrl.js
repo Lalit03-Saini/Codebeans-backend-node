@@ -1,40 +1,25 @@
 const Gallery = require("../models/galleryModel");
-const multer = require("multer");
 const asyncHandler = require("express-async-handler");
-const path = require("path");
+const cloudinary = require('../utils/cloudinary');
+const fs = require('fs');
 
-// Storage configuration for multer
-const storage = multer.diskStorage({
-    destination: './CB-Frontend/public/assets/images/gallery',
-    filename: (req, file, callback) => {
-        const ext = path.extname(file.originalname);
-        const fileName = Date.now() + ext;
-        callback(null, fileName);
-    },
-});
-
-const upload = multer({
-    storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit (adjust as needed)
-}).single('image'); // Use 'image' as the field name for file upload
-
+//Create New Gallery Image
 const createGallery = asyncHandler(async (req, res) => {
     try {
-        upload(req, res, async function (err) {
-            if (err) {
-                return res.status(400).json({ error: 'Failed to upload image. Please select an image file under 5MB.' });
-            }
-            if (!req.body.s_no) {
-                return res.status(400).json({ error: 'Please provide all required fields.' });
-            }
-            const gallery_image = req.file.filename; // Get the uploaded file name
-            const newGallery = new Gallery({
-                s_no: req.body.s_no,
-                gallery_image: gallery_image,
-            });
-            await newGallery.save();
-            res.status(201).json({ message: "Gallery image has been successfully saved." });
+        const result = await cloudinary.uploader.upload(req.file.path, {
+            folder: 'Gallery',
         });
+        fs.unlinkSync(req.file.path);
+
+        const newGallery = new Gallery({
+            s_no: req.body.s_no,
+            gallery_image: result.secure_url,
+            cloudinaryPublicId: result.public_id,
+        });
+
+        await newGallery.save();
+
+        res.status(201).json({ message: "Gallery image has been successfully saved." });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: `An error occurred: ${error.message}` });

@@ -18,6 +18,16 @@ const userSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
+        confirmPassword: {
+            type: String,
+            required: true,
+            validate: {
+                validator: function (v) {
+                    return this.password === v;
+                },
+                message: props => `The passwords do not match.`
+            }
+        },
         role: {
             type: String,
             default: "editor",
@@ -30,17 +40,27 @@ const userSchema = new mongoose.Schema(
         timestamps: true,
     }
 );
+
+// Pre-save hook to compare password and confirmPassword before saving
 userSchema.pre("save", async function (next) {
     if (!this.isModified("password")) {
-        next();
+        return next();
     }
-    const salt = await bcrypt.genSaltSync(10);
+    if (this.password !== this.confirmPassword) {
+        throw new Error("Password and confirmPassword do not match");
+    }
+    const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
+    this.confirmPassword = undefined; // Remove confirmPassword from the document
     next();
 });
+
+// Method to compare entered password with the hashed password
 userSchema.methods.isPasswordMatched = async function (enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
 };
+
+// Method to create a password reset token
 userSchema.method.createPasswordResetToken = async function () {
     const resettoken = crypto.randomBytes(32).toString("hex");
     this.passwordResetToken = crypto
@@ -52,4 +72,4 @@ userSchema.method.createPasswordResetToken = async function () {
 };
 
 //Export the model
-module.exports = mongoose.model("CbAdmin", userSchema);
+module.exports = mongoose.model("cbadmins", userSchema);

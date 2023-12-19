@@ -1,6 +1,5 @@
 const cloudinary = require('cloudinary').v2;
 
-
 cloudinary.config({
     cloud_name: "codebeans0622",
     api_key: "965612634332585",

@@ -4,22 +4,33 @@ const { generateToken } = require("../config/jwtToken");
 const asyncHandler = require("express-async-handler");
 const User = require("../models/userModel");
 
-
 //----Create New User ------//
 const createUser = asyncHandler(async (req, res) => {
-    /** Get the email from req.body */
-    const email = req.body.email;
-    // const { fullname, email, password, confirmPassword } = req.body;
-    // email = req.body.email;
-    /** With the help of email find the user exists or not */
-    const findUser = await User.findOne({ email: email });
-    if (!findUser) {
-        /*** TODO:if user not found user create a new user */
-        const newUser = await User.create(req.body);
-        res.json(newUser);
-    } else {
-        /***if user found then thow an error: User already exists */
-        throw new Error("User Already Exists")
+    try {
+        const { email, fullname, password, confirmPassword } = req.body;
+
+        if (password !== confirmPassword) {
+            return res.status(400).json({ error: 'Password and confirm password do not match' });
+        }
+
+        // Only save the password to the database
+        const newUser = new User({
+            email,
+            fullname,
+            password, // Save the password to the database
+        });
+
+        // Save the new user to the database
+        await newUser.save();
+
+        console.log('Request Body:', req.body);
+        res.status(201).json({ message: 'User created successfully' });
+    } catch (error) {
+        // Log the error for debugging
+        console.error('Error in createUser:', error);
+
+        // Provide a more informative error response
+        res.status(500).json({ error: 'Internal Server Error', details: error.message });
     }
 });
 
@@ -57,7 +68,6 @@ const loginAdmin = asyncHandler(async (req, res) => {
 const updatedUser = asyncHandler(async (req, res) => {
     const { _id } = req.user;
     validateMongoDbId(_id);
-
     try {
         const updatedUser = await User.findByIdAndUpdate(
             _id,
@@ -98,7 +108,7 @@ const getallUser = asyncHandler(async (req, res) => {
     } catch (error) {
         throw new Error(error);
     }
-})
+});
 
 const getaUser = asyncHandler(async (req, res) => {
     const { id } = req.params;
@@ -108,7 +118,7 @@ const getaUser = asyncHandler(async (req, res) => {
     } catch (error) {
         throw new Error(error);
     }
-})
+});
 
 // logout functionality
 const logout = asyncHandler(async (req, res) => {

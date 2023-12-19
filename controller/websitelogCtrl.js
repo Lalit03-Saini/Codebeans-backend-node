@@ -1,80 +1,71 @@
 const Websitelog = require("../models/websitelogModel");
-const multer = require("multer");
 const asyncHandler = require("express-async-handler");
-const path = require("path");
+const cloudinary = require('../utils/cloudinary');
+const fs = require('fs');
 
-//Storage configuration for multer
-const storage = multer.diskStorage({
-    destination: './CB-Frontend/public',
-    filename: (req, file, callback) => {
-        const ext = path.extname(file.originalname);
-        const fileName = Date.now() + ext;
-        callback(null, fileName);
-    }
-});
-
-const upload = multer({
-    storage,
-    limits: { fileSize: 10 * 1024 * 1024 }, // Increase the limit to 10MB (or any desired size)
-}).single('image');
-
-//Createing website logo
+// Create website logo
 const createLogo = asyncHandler(async (req, res) => {
     try {
-        upload(req, res, async function (err) {
-            if (err) {
-                return res.status(400).json({ error: "Failed to upload image. Please select an image file under 5MB." });
-            }
-
-            const logo = req.file.filename;// Get the uploaded file name
-            const newWebLogo = new Websitelog({ logo: logo });
-            await newWebLogo.save();
-            res.status(201).json({ message: "Website Logo has been successfully saved." });
+        const result = await cloudinary.uploader.upload(req.file.path, {
+            folder: 'website_logo',
         });
+        fs.unlinkSync(req.file.path);
+
+        const newWebLogo = new Websitelog({
+            logo: result.secure_url,
+            cloudinaryPublicId: result.public_id,
+        });
+
+        await newWebLogo.save();
+
+        res.status(201).json({ message: "Website Logo has been successfully saved." });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: `An error occurred: ${error.message}` });
     }
 });
 
-//Update website Logo
-const updatewebsitelogo = asyncHandler(async (req, res) => {
-    const { id } = req.params;
+// Update website Logo
+const updateWebsiteLogo = asyncHandler(async (req, res) => {
     try {
-        const Updatewebsitelogo = await Websitelog.findById(id);
-        if (!Updatewebsitelogo) {
-            return res.status(404).json({ message: "Logo was not found" });
-        }
-        upload(req, res, async function (err) {
-            if (err) {
-                return res.status(400).json({
-                    error: 'Please select an image file or select less than 5MB.'
-                })
-            }
-            if (req.file) {
-                Updatewebsitelogo.logo = req.file.filename;
-            }
-            //Save the updated Website Logo 
-            await Updatewebsitelogo.save();
-            res.json({
-                message: 'WebSite Logo updated successfully..'
+        const id = req.params.id;
+        let imageUrl = null;
+        let cloudinaryPublicId = null;
+
+        if (req.file) {
+            const result = await cloudinary.uploader.upload(req.file.path, {
+                folder: 'website_logo'
             });
-        });
+            imageUrl = result.secure_url;
+            cloudinaryPublicId = result.public_id;
+        }
+
+        const webLogo = await Websitelog.findById(id);
+
+        if (!webLogo) {
+            return res.status(404).json({ success: false, message: 'Website Logo not found' });
+        }
+
+        webLogo.imageUrl = imageUrl || webLogo.imageUrl;
+        webLogo.cloudinaryPublicId = cloudinaryPublicId || webLogo.cloudinaryPublicId;
+
+        await webLogo.save();
+        res.json({ success: true, message: 'Website Logo updated successfully' });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: `An error occurred: ${error.message}` });
+        res.status(500).json({ success: false, error: `An error occurred: ${error.message}` });
     }
 });
 
-//Get website Logo
-const getwebsiteLogo = asyncHandler(async (req, res) => {
+// Get website Logo
+const getWebsiteLogo = asyncHandler(async (req, res) => {
     try {
-        const weblogo = await Websitelog.find();
-        res.json(weblogo);
+        const weblogo = await Websitelog.findOne();
+        res.json({ success: true, data: weblogo });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: "Internal server error." });
+        res.status(500).json({ success: false, message: "Internal server error." });
     }
 });
 
-module.exports = { createLogo, updatewebsitelogo, getwebsiteLogo };
+module.exports = { createLogo, updateWebsiteLogo, getWebsiteLogo };

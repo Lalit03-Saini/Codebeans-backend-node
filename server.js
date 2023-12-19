@@ -19,12 +19,14 @@ const Footerlist = require("./routes/footerRoute");
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
 const dotenv = require("dotenv").config();
+require('dotenv').config();
 const PORT = process.env.PORT || 8080;
 const express = require("express");
 const morgan = require("morgan");
 const cors = require('cors')
 const app = express();
 dbConnect();
+
 
 app.use(cors());
 app.use(morgan("dev"));
