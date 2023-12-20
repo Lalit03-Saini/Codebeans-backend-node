@@ -34,8 +34,6 @@ const createTeamMember = asyncHandler(async (req, res) => {
 const updateTeamMember = asyncHandler(async (req, res) => {
     try {
         const teamMemberId = req.params.id;
-
-        // Find the team member by ID
         const teamMember = await Team.findById(teamMemberId);
 
         if (!teamMember) {
@@ -48,8 +46,8 @@ const updateTeamMember = asyncHandler(async (req, res) => {
         }
 
         // Check if a file is uploaded
-        let imageUrl = null;
-        let cloudinaryPublicId = null;
+        let imageUrl = teamMember.banner_image;
+        let cloudinaryPublicId = teamMember.cloudinaryPublicId;
 
         if (req.file) {
             // Upload image to Cloudinary in the "Team_member" folder
@@ -59,8 +57,8 @@ const updateTeamMember = asyncHandler(async (req, res) => {
             imageUrl = result.secure_url;
             cloudinaryPublicId = result.public_id;
             // Delete the local file after uploading to Cloudinary
+            fs.unlinkSync(req.file.path);
         }
-        fs.unlinkSync(req.file.path);
 
         // Update team member fields
         teamMember.s_no = req.body.s_no || teamMember.s_no;
@@ -68,7 +66,7 @@ const updateTeamMember = asyncHandler(async (req, res) => {
         teamMember.linkedin_id = req.body.linkedin_id || teamMember.linkedin_id;
         teamMember.position = req.body.position || teamMember.position;
         teamMember.order = req.body.order || teamMember.order;
-        teamMember.imageUrl = imageUrl || teamMember.imageUrl;
+        teamMember.banner_image = imageUrl || teamMember.banner_image;
         teamMember.cloudinaryPublicId = cloudinaryPublicId || teamMember.cloudinaryPublicId;
 
         // Save the updated team member
@@ -107,7 +105,6 @@ const deleteTeamMember = asyncHandler(async (req, res) => {
         res.status(500).json({ message: 'Internal server error', error: error.message });
     }
 });
-
 
 // Get all team members
 const getAllTeamMembers = asyncHandler(async (req, res) => {

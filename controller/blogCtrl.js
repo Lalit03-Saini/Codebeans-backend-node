@@ -1,48 +1,63 @@
 const Blog = require("../models/blogModel");
-const asyncHandler = require("express-async-handler");
+const asyncHandler = require('express-async-handler');
 const cloudinary = require('../utils/cloudinary');
 const fs = require('fs');
-
 
 // Creating Blog
 const createBlog = asyncHandler(async (req, res) => {
     try {
-        // Use the 'upload' middleware to handle file uploads
-        upload(req, res, async function (err) {
-            if (err) {
-                return res.status(400).json({ error: "Please select image files (up to 5) with a total size less than 5MB." });
-            }
-            if (!req.body.s_no || !req.body.title || !req.body.blogdetail || !req.body.heading || !req.body.heading1 || !req.body.heading2 || !req.body.headingdetail || !req.body.headingdetail1 || !req.body.headingdetail2) {
-                return res.status(400).json({ error: 'Please provide all required fields.' });
-            }
-            // Upload images to Cloudinary
-            const imageUrls = [];
-            for (let i = 1; i <= 5; i++) {
-                if (req.files[`image${i}`]) {
-                    const result = await cloudinary.uploader.upload(req.files[`image${i}`][0].path);
-                    imageUrls.push(result.secure_url);
-                }
-            }
-            for (let i = 1; i <= 5; i++) {
-                if (req.files[`image${i}`]) {
-                    fs.unlinkSync(req.files[`image${i}`][0].path);
-                }
-            }
-            const newBlog = new Blog({
-                s_no: req.body.s_no,
-                title: req.body.title,
-                blogdetail: req.body.blogdetail,
-                heading: req.body.heading,
-                heading1: req.body.heading1,
-                heading2: req.body.heading2,
-                headingdetail: req.body.headingdetail,
-                headingdetail1: req.body.headingdetail1,
-                headingdetail2: req.body.headingdetail2,
-                imagePaths: imageUrls,
-            });
-            await newBlog.save();
-            res.status(201).json({ message: 'Blog created successfully' });
+        if (!req.file) {
+            return res.status(400).json({ error: "No file uploaded." });
+        }
+
+        const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+            folder: 'Blog',
         });
+        fs.unlinkSync(req.file.path);
+
+        if (uploadResult.error) {
+            return res.status(400).json({ error: "Failed to upload the main image to Cloudinary." });
+        }
+
+        // Validate required fields
+        const requiredFields = ['s_no', 'title', 'blogdetail', 'heading', 'heading1', 'heading2', 'heading3', 'heading4', 'heading5', 'headingdetail', 'headingdetail1', 'headingdetail2', 'headingdetail3', 'headingdetail4', 'headingdetail5'];
+        if (requiredFields.some(field => !req.body[field])) {
+            return res.status(400).json({ error: 'Please provide all required fields.' });
+        }
+
+        // Upload images to Cloudinary
+        const imageUrls = [];
+        for (let i = 1; i <= 5; i++) {
+            if (req.files[`image${i}`]) {
+                const result = await cloudinary.uploader.upload(req.files[`image${i}`][0].path);
+                imageUrls.push(result.secure_url);
+                fs.unlinkSync(req.files[`image${i}`][0].path);
+            }
+        }
+
+        const newBlog = new Blog({
+            s_no: req.body.s_no,
+            title: req.body.title,
+            blogdetail: req.body.blogdetail,
+            heading: req.body.heading,
+            heading1: req.body.heading1,
+            heading2: req.body.heading2,
+            heading3: req.body.heading3,
+            heading4: req.body.heading4,
+            heading5: req.body.heading5,
+            headingdetail: req.body.headingdetail,
+            headingdetail1: req.body.headingdetail1,
+            headingdetail2: req.body.headingdetail2,
+            headingdetail3: req.body.headingdetail3,
+            headingdetail4: req.body.headingdetail4,
+            headingdetail5: req.body.headingdetail5,
+            imagePaths: imageUrls,
+            cloudinaryPublicId: imageUrls.public_id,
+        });
+
+        await newBlog.save();
+
+        res.status(201).json({ message: 'Blog created successfully' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: `An error occurred: ${error.message}` });
