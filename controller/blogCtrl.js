@@ -172,7 +172,6 @@ const GetAllBlog = asyncHandler(async (req, res) => {
         const totalPages = Math.ceil(totalBlogCount / perPage);
         // Set a custom header "X-Total-Pages" to transmit the total number of pages
         res.setHeader("X-Total-Pages", totalPages);
-        console.log(totalPages);
         const allBlog = await Blog.find()
             .sort('s_no')
             .skip(skip)

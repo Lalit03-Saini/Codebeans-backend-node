@@ -49,10 +49,7 @@ const GetallFaQ = asyncHandler(async (req, res, next) => {
         //Calculate the number of pages
         const totalPages = Math.ceil(totalFaQCount / perPage);
         // Set a custom header "X-Total-Pages" to transmit the total number of pages
-        const qwe = res.header('Access-Control-Expose-Headers', 'X-Total-Count')
         res.setHeader("X-Total-Pages", totalPages);
-        // localStorage.setItem('X-Total-Pages', totalPagesHeader);
-        console.log(qwe)
         const getallfaq = await FaQ.find()
             .sort('s_no')
             .skip(skip)

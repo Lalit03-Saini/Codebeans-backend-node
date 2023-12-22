@@ -61,7 +61,7 @@ const updateWebsiteLogo = asyncHandler(async (req, res) => {
 const getWebsiteLogo = asyncHandler(async (req, res) => {
     try {
         const weblogo = await Websitelog.findOne();
-        res.json({ success: true, data: weblogo });
+        res.json(weblogo);
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, message: "Internal server error." });

@@ -41,20 +41,9 @@ const deleteheaderopt = asyncHandler(async (req, res) => {
 //-----------------Get all Header Option-----------------//
 const getallheaderopt = asyncHandler(async (req, res) => {
     try {
-        const page = parseInt(req.query.page) || 1;
-        const perPage = 10; // Number of posts to fetch per page
-        const skip = (page - 1) * perPage;
-        //Calculate the total number of posts
-        const totalHeaderCount = await Header.countDocuments();
-        //Calculate the number of pages 
-        const totalPages = Math.ceil(totalHeaderCount / perPage);
         //Set a custom header "X-Total-Pages" to transmit the total number of pages
-        res.setHeader("X-Total-Pages", totalPages);
-        console.log(totalPages)
         const GetAllHeaderopt = await Header.find()
             .sort('s_no')
-            .skip(skip)
-            .limit(perPage);
 
         res.status(201).json(GetAllHeaderopt);
     } catch (error) {
